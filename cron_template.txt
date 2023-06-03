@@ -1,0 +1,19 @@
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday;
+# │ │ │ │ │                                       7 is also Sunday on some systems)
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *  command_to_execute
+
+0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus /home/bruce/myScripts/wallpaper.sh  2>&1 | logger -t mycmd
+
+0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -i /home/bruce/Pictures/icons/notify.ico  "BREAK REMINDER" "Bro, take a break, its been an hour"
+
+30 10 * * 1 /bin/bash /home/bruce/myScripts/cleaner.sh
+
+0 11 * * *  /bin/bash /home/bruce/myScripts/unsplashed.sh
+
+
