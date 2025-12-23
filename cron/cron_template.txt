@@ -8,12 +8,14 @@
 # │ │ │ │ │
 # * * * * *  command_to_execute
 
-0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus /home/bruce/myScripts/wallpaper.sh  2>&1 | logger -t mycmd
+MYSCRIPTS_DIR=/home/youruser/myScripts
 
-0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -i /home/bruce/Pictures/icons/notify.ico  "BREAK REMINDER" "Bro, take a break, its been an hour"
+0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus $MYSCRIPTS_DIR/cron/wallpaper.sh  2>&1 | logger -t mycmd
 
-30 10 * * 1 /bin/bash /home/bruce/myScripts/cleaner.sh
+0 */2 * * * env DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus notify-send -i /home/youruser/Pictures/icons/notify.ico  "BREAK REMINDER" "Bro, take a break, its been an hour"
 
-0 11 * * *  /bin/bash /home/bruce/myScripts/unsplashed.sh
+30 10 * * 1 /bin/bash $MYSCRIPTS_DIR/cron/cleaner.sh
+
+0 11 * * *  /bin/bash $MYSCRIPTS_DIR/cron/unsplashed.sh
 
 

@@ -1,1 +1,24 @@
-*.json
+# API Keys and secrets
+config/keys.json
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Backup files
+*.backup
+*.bak
+
+# Test/experimental scripts
+experiment.sh
+test_*.sh

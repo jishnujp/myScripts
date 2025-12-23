@@ -1,0 +1,45 @@
+#!/bin/bash
+# Backup script - Creates timestamped tar.gz archives
+
+set -e  # Exit on error
+
+# Check if folder argument is provided
+if [ -z "$1" ]; then
+    echo "Usage: backup <folder_to_compress>"
+    echo "Example: backup ~/Documents"
+    exit 1
+fi
+
+folder_to_compress="$1"
+
+# Check if folder exists
+if [ ! -d "$folder_to_compress" ]; then
+    echo "Error: Directory '$folder_to_compress' does not exist"
+    exit 1
+fi
+
+# Use absolute path
+folder_to_compress=$(realpath "$folder_to_compress")
+
+# Create backup directory
+backup_folder="$HOME/backup"
+mkdir -p "$backup_folder"
+
+# Generate timestamp
+current_date_time=$(date +"%Y-%m-%d_%H-%M-%S")
+
+# Create backup filename
+backup_name="$(basename "$folder_to_compress")_${current_date_time}.tar.gz"
+backup_path="${backup_folder}/${backup_name}"
+
+echo "Creating backup of: $folder_to_compress"
+echo "Backup location: $backup_path"
+
+# Create backup
+if tar -czf "$backup_path" -C "$(dirname "$folder_to_compress")" "$(basename "$folder_to_compress")"; then
+    backup_size=$(du -h "$backup_path" | cut -f1)
+    echo "✓ Backup created successfully: $backup_name ($backup_size)"
+else
+    echo "✗ Backup failed"
+    exit 1
+fi

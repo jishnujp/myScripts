@@ -1,6 +1,6 @@
 #!/bin/bash
 
-downloads_dir="/home/bruce/Downloads"
+downloads_dir="~/Downloads"
 
 declare -A arr
 
