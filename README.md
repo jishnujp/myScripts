@@ -16,6 +16,66 @@ Or one-liner:
 git clone https://github.com/jishnujp/myScripts.git ~/myScripts && cd ~/myScripts && chmod +x install.sh && ./install.sh
 ```
 
+### Installation Options
+
+**Install everything (default):**
+```bash
+./install.sh
+```
+
+**Install only Neovim configuration:**
+```bash
+./install.sh --nvim-only
+```
+
+**See all options:**
+```bash
+./install.sh --help
+```
+
+## 🎯 Installation Modes
+
+The installer supports flexible installation options to suit your needs:
+
+| Option | Description |
+|--------|-------------|
+| `--nvim-only` | Install only Neovim configuration |
+| `--scripts-only` | Install only command-line scripts (bin/) |
+| `--no-nvim` | Install everything except Neovim config |
+| `--no-scripts` | Install everything except scripts |
+| `--minimal` | Create directories only, no scripts or nvim |
+| `--no-path` | Don't modify shell PATH configuration |
+| `--dry-run` | Preview what would be installed |
+| `--force` | Skip backup of existing nvim config |
+| `-h, --help` | Show help message |
+
+### Common Use Cases
+
+**Neovim configuration only:**
+```bash
+./install.sh --nvim-only
+```
+
+**Scripts without modifying PATH:**
+```bash
+./install.sh --scripts-only --no-path
+```
+
+**Everything except Neovim:**
+```bash
+./install.sh --no-nvim
+```
+
+**Preview before installing:**
+```bash
+./install.sh --dry-run
+```
+
+**Quick nvim update (skip existing backup):**
+```bash
+./install.sh --nvim-only --force
+```
+
 ## 📦 What's Included
 
 ### Command-Line Tools (added to PATH)
@@ -89,10 +149,25 @@ myScripts/
 
 ## 🔄 Updating
 
+**Update everything:**
 ```bash
 cd ~/myScripts
 git pull
 ./install.sh
+```
+
+**Update only Neovim config:**
+```bash
+cd ~/myScripts
+git pull
+./install.sh --nvim-only
+```
+
+**Update only scripts:**
+```bash
+cd ~/myScripts
+git pull
+./install.sh --scripts-only
 ```
 
 ## 🛠️ Dependencies
