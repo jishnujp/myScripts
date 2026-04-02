@@ -44,3 +44,27 @@ opt.undofile = true
 
 -- Completion
 opt.completeopt = { "menu", "menuone", "noselect" }
+
+-- ── Markdown-specific overrides ────────────────────────────────────────
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "markdown",
+  callback = function()
+    local wo = vim.wo
+    -- Treesitter-based fold by heading: za/zc/zo to open/close sections
+    wo.foldmethod  = "expr"
+    wo.foldexpr    = "v:lua.vim.treesitter.foldexpr()"
+    wo.foldlevel   = 99    -- start fully unfolded
+    -- Prose display
+    wo.wrap        = true
+    wo.linebreak   = true
+    wo.breakindent = true
+    -- Concealment (markview uses this to render inline elements)
+    wo.conceallevel  = 2
+    wo.concealcursor = "nc"
+    -- Spell check (spell is window-local, spelllang is buffer-local)
+    wo.spell = true
+    vim.opt_local.spelllang = "en_us"
+    -- No 80-char ruler for prose
+    wo.colorcolumn = ""
+  end,
+})

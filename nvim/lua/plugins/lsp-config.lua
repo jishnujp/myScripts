@@ -22,6 +22,7 @@ return {
           "vue_ls", -- This is vue-language-server in mason-lspconfig
           "gopls",
           "bashls",
+          "markdown_oxide",
         },
         automatic_installation = true,
       })
@@ -73,6 +74,18 @@ return {
         filetypes = { "typescript", "javascript", "typescriptreact", "javascriptreact", "vue" },
       })
 
+      vim.lsp.config("markdown_oxide", {
+        capabilities = vim.tbl_deep_extend("force",
+          vim.lsp.protocol.make_client_capabilities(),
+          { workspace = { didChangeWatchedFiles = { dynamicRegistration = true } } }
+        ),
+        filetypes = { "markdown" },
+        root_dir = function(fname)
+          local util = require("lspconfig.util")
+          return util.root_pattern(".git", ".obsidian")(fname) or vim.fn.getcwd()
+        end,
+      })
+
       -- Enable all servers (auto-starts when matching filetype is opened)
       vim.lsp.enable({
         "lua_ls",
@@ -82,6 +95,7 @@ return {
         "vue_ls",
         "gopls",
         "bashls",
+        "markdown_oxide",
       })
     end,
   },

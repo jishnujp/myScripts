@@ -17,3 +17,9 @@ map("n", "<leader>e", "<cmd>Neotree toggle<cr>", "Toggle file explorer")
 -- Git (Fugitive)
 map("n", "<leader>gs", "<cmd>Git<cr>", "Git status")
 
+-- ── Move lines up/down (all filetypes) ────────────────────────────────
+map("n", "<A-j>", "<cmd>move .+1<cr>==", "Move line down")
+map("n", "<A-k>", "<cmd>move .-2<cr>==", "Move line up")
+map("v", "<A-j>", ":move '>+1<cr>gv=gv", "Move selection down")
+map("v", "<A-k>", ":move '<-2<cr>gv=gv", "Move selection up")
+
