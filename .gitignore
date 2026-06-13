@@ -1,5 +1,14 @@
 # API Keys and secrets
 config/keys.json
+*.local
+*.local.json
+settings.local.json
+.env.local
+.env
+**/credentials
+**/token*.json
+*history
+**/__pycache__/
 
 # Temporary files
 *.log

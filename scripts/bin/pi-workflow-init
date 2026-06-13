@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+force=0
+root="."
+
+usage() {
+  cat <<'EOF'
+Usage: pi-workflow-init [--force] [path]
+
+Create repo-local Pi workflow files without overwriting existing files by default:
+  AGENTS.md
+  docs/goal.md
+  docs/plan.md
+  docs/tasks.md
+  docs/decisions.md
+
+Options:
+  --force   overwrite existing files
+  -h,--help show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force)
+      force=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      root="$1"
+      shift
+      ;;
+  esac
+done
+
+mkdir -p "$root/docs"
+
+write_file() {
+  local file="$1"
+  local label="$2"
+  if [[ -e "$file" && "$force" -ne 1 ]]; then
+    printf 'skip: %s exists\n' "$file"
+    return 0
+  fi
+  mkdir -p "$(dirname "$file")"
+  cat > "$file"
+  printf '%s: %s\n' "$label" "$file"
+}
+
+write_file "$root/AGENTS.md" "created" <<'EOF'
+# Agent Working Agreement
+
+## Default Behavior
+
+For non-trivial work:
+- Read `docs/goal.md`, `docs/plan.md`, `docs/decisions.md`, and `docs/tasks.md` first when they exist.
+- If the goal or plan is missing, interview me before coding.
+- The human owns goals, plans, scope, and final design decisions.
+- The agent critiques, recommends, researches, implements agreed slices, and reviews diffs.
+- Do not start implementation until acceptance criteria exist.
+- Implement one vertical slice at a time.
+- Stop after each slice for human review.
+- Keep the repo runnable after every slice.
+- Do not perform large unrelated refactors.
+- Do not stage, commit, push, or create branches automatically.
+- Do not change public APIs, database schema, auth, deployment, or security behavior without explicitly calling it out.
+
+## Planning Flow
+
+1. Human creates or approves `docs/goal.md`.
+2. Human creates or approves `docs/plan.md`.
+3. Agent critiques the plan.
+4. Human and agent debate unresolved decisions.
+5. Agreed decisions are recorded in `docs/plan.md` and `docs/decisions.md`.
+6. Agent creates `docs/tasks.md` as vertical slices.
+7. Agent implements one slice, then stops.
+8. Human reviews the diff and asks to continue.
+
+## Before Coding
+
+Always restate:
+- selected slice
+- expected files to change
+- verification commands
+- risks or assumptions
+
+## After Coding
+
+Always report:
+- files changed
+- behavior changed
+- tests/checks run
+- tests/checks not run and why
+- risks/open questions
+- suggested commit message
+
+Then stop and wait for human review.
+
+## Code Quality
+
+Prefer:
+- simple code over clever abstractions
+- explicit control flow
+- small functions
+- existing project patterns
+- tests for changed behavior
+
+Avoid:
+- broad rewrites
+- speculative abstractions
+- hidden behavior changes
+- fake tests
+- suppressing errors to make tests pass
+
+## Project Commands
+
+- Install: TODO
+- Test: TODO
+- Lint: TODO
+- Typecheck: TODO
+- Run/dev: TODO
+
+## Project Conventions
+
+- TODO: add repo-specific conventions here.
+
+## Mistake Handling
+
+If the same correction is made twice, suggest an update to this file or to the relevant workflow doc.
+EOF
+
+write_file "$root/docs/goal.md" "created" <<'EOF'
+# Goal
+
+## Problem
+What problem are we solving?
+
+## User
+Who is it for?
+
+## Constraints
+Technical, business, time, infra, security, performance constraints.
+
+## Success Criteria
+What must be true for this to be considered done?
+
+## Verification
+How will we prove it works?
+- Unit tests:
+- Integration tests:
+- Manual checks:
+- Demo path:
+
+## Out of Scope
+What are we explicitly not doing?
+EOF
+
+write_file "$root/docs/plan.md" "created" <<'EOF'
+# Technical Plan
+
+## Architecture
+
+## Data Model
+
+## API / Interfaces
+
+## Components
+
+## Tradeoffs
+
+## Risks
+
+## Alternatives Considered
+
+## Open Questions
+
+## Accepted Decisions
+EOF
+
+write_file "$root/docs/tasks.md" "created" <<'EOF'
+# Tasks
+
+<!-- Created after docs/goal.md and docs/plan.md are accepted. Use vertical slices only. -->
+
+## Slice 1: TODO
+
+### Goal
+What user-visible or verifiable behavior works after this slice?
+
+### Depends On
+- none
+
+### Files Likely Touched
+- TODO
+
+### Acceptance Criteria
+- [ ] TODO
+
+### Verification Command
+```bash
+TODO
+```
+
+### Manual Check
+- TODO
+
+### Risks / Notes
+- TODO
+
+### Status
+pending
+EOF
+
+write_file "$root/docs/decisions.md" "created" <<'EOF'
+# Decisions
+
+Record accepted design decisions here.
+
+## Template
+
+### YYYY-MM-DD — Decision title
+
+- Decision:
+- Context:
+- Alternatives:
+- Rationale:
+- Consequences:
+EOF
+
+printf '\nDone. Suggested next steps:\n'
+printf '1. Fill docs/goal.md manually or with /skill:clarify-goal.\n'
+printf '2. Fill docs/plan.md manually or with /skill:clarify-goal.\n'
+printf '3. Run /skill:critique-plan.\n'
+printf '4. Resolve decisions with /skill:plan-debate.\n'
+printf '5. Create slices with /skill:slice-tasks.\n'
+printf '6. Implement one slice at a time with /skill:implement-slice.\n'
