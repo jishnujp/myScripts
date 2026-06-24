@@ -1,0 +1,13 @@
+# Machine-specific bash customizations for this host.
+#
+# To use:
+#   cp ~/.bashrc.local.example ~/.bashrc.local
+#   edit ~/.bashrc.local
+#
+# This file is an example and is safe to commit. The real ~/.bashrc.local is ignored.
+
+# Example: host-specific environment variables
+# export EDITOR=nvim
+
+# Example: host-specific aliases
+# alias work='cd ~/work'
