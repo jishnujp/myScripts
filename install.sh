@@ -1,315 +1,199 @@
-#!/bin/bash
-# myScripts Installation Script
+#!/usr/bin/env bash
+# dotfiles installer
 
-set -e
+set -euo pipefail
 
-# Color codes
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Configuration
-SCRIPTS_DIR="$HOME/.local/bin"
-NVIM_CONFIG_DIR="$HOME/.config/nvim"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STOW_PACKAGES=(nvim tmux git bash)
+BACKUP_ROOT="$HOME/.dotfiles-backup"
 
 print_status() { echo -e "${GREEN}[✓]${NC} $1"; }
 print_warning() { echo -e "${YELLOW}[!]${NC} $1"; }
 print_error() { echo -e "${RED}[✗]${NC} $1"; }
 
-show_help() {
-    cat << EOF
-${GREEN}myScripts Installation${NC}
-
-${YELLOW}Usage:${NC}
-  ./install.sh [OPTIONS]
-
-${YELLOW}Options:${NC}
-  --nvim-only         Install only Neovim configuration
-  --scripts-only      Install only bin/ scripts
-  --no-nvim           Install everything except Neovim config
-  --no-scripts        Install everything except bin/ scripts
-  --minimal           Create directories only (no scripts or nvim)
-  --no-path           Don't modify shell PATH configuration
-  --dry-run           Show what would be installed without making changes
-  --force             Skip backup of existing nvim config
-  -h, --help          Show this help message
-
-${YELLOW}Components:${NC}
-  Scripts:            Command-line tools in bin/ (backup, practice, closeall, etc.)
-  Neovim:             Neovim configuration with plugins
-  Config:             Setup config files and directories
-  PATH:               Add ~/.local/bin to shell PATH
-
-${YELLOW}Examples:${NC}
-  # Install everything (default)
-  ./install.sh
-
-  # Install only Neovim configuration
-  ./install.sh --nvim-only
-
-  # Install scripts but don't modify PATH
-  ./install.sh --scripts-only --no-path
-
-  # Preview what would be installed
-  ./install.sh --dry-run
-
-  # Update only scripts, skip nvim
-  ./install.sh --no-nvim
-
-EOF
-    exit 0
+confirm() {
+    local prompt="$1"
+    local answer
+    read -r -p "$prompt [y/N] " answer
+    case "$answer" in
+        y|Y|yes|YES) return 0 ;;
+        *) return 1 ;;
+    esac
 }
 
-# Installation flags (defaults to full install for backwards compatibility)
-INSTALL_NVIM=true
-INSTALL_SCRIPTS=true
-INSTALL_CONFIG=true
-ADD_TO_PATH=true
-DRY_RUN=false
-FORCE_INSTALL=false
+ensure_stow() {
+    if command -v stow >/dev/null 2>&1; then
+        print_status "stow installed"
+        return 0
+    fi
 
-# Parse command-line arguments
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --nvim-only)
-            INSTALL_NVIM=true
-            INSTALL_SCRIPTS=false
-            INSTALL_CONFIG=false
-            ADD_TO_PATH=false
-            shift
-            ;;
-        --scripts-only)
-            INSTALL_NVIM=false
-            INSTALL_SCRIPTS=true
-            INSTALL_CONFIG=true
-            ADD_TO_PATH=true
-            shift
-            ;;
-        --no-nvim)
-            INSTALL_NVIM=false
-            shift
-            ;;
-        --no-scripts)
-            INSTALL_SCRIPTS=false
-            ADD_TO_PATH=false
-            shift
-            ;;
-        --minimal)
-            INSTALL_NVIM=false
-            INSTALL_SCRIPTS=false
-            INSTALL_CONFIG=false
-            ADD_TO_PATH=false
-            shift
-            ;;
-        --no-path)
-            ADD_TO_PATH=false
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --force)
-            FORCE_INSTALL=true
-            shift
-            ;;
-        -h|--help)
-            show_help
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            echo "Run './install.sh --help' for usage information"
-            exit 1
-            ;;
-    esac
-done
+    print_warning "GNU Stow is not installed."
+    if ! confirm "Install stow now if a supported package manager is available?"; then
+        print_error "stow is required to install dotfile packages."
+        exit 1
+    fi
 
-echo -e "${GREEN}=== myScripts Installation ===${NC}\n"
-
-if [ "$DRY_RUN" = true ]; then
-    echo -e "${YELLOW}[DRY RUN MODE - No changes will be made]${NC}\n"
-fi
-
-# Create necessary directories
-echo "Setting up directories..."
-mkdir -p "$SCRIPTS_DIR"
-mkdir -p "$HOME/.config"
-mkdir -p "$HOME/backup"
-mkdir -p "$HOME/Pictures/Background"
-
-# Install executable scripts from bin/
-if [ "$INSTALL_SCRIPTS" = true ]; then
-    echo -e "\n${YELLOW}Installing command-line scripts...${NC}"
-    if [ "$DRY_RUN" = true ]; then
-        print_warning "[DRY RUN] Would install scripts from bin/ to $SCRIPTS_DIR"
-    elif [ -d "$REPO_DIR/bin" ]; then
-        for script in "$REPO_DIR/bin"/*; do
-            if [ -f "$script" ]; then
-                script_name=$(basename "$script")
-                cp "$script" "$SCRIPTS_DIR/$script_name"
-                chmod +x "$SCRIPTS_DIR/$script_name"
-                print_status "Installed: $script_name"
-            fi
-        done
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y stow
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y stow
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --needed stow
+    elif command -v brew >/dev/null 2>&1; then
+        brew install stow
     else
-        print_warning "No bin/ directory found"
+        print_error "No supported package manager found. Install GNU Stow manually and rerun."
+        exit 1
     fi
-fi
 
-# Add to PATH if needed
-if [ "$INSTALL_SCRIPTS" = true ] && [ "$ADD_TO_PATH" = true ]; then
-    if [[ ":$PATH:" != *":$SCRIPTS_DIR:"* ]]; then
-        echo -e "\n${YELLOW}Adding $SCRIPTS_DIR to PATH...${NC}"
+    print_status "stow installed"
+}
 
-        # Detect shell config
-        if [ -n "$ZSH_VERSION" ]; then
-            SHELL_CONFIG="$HOME/.zshrc"
-        elif [ -n "$BASH_VERSION" ]; then
-            SHELL_CONFIG="$HOME/.bashrc"
-        else
-            SHELL_CONFIG="$HOME/.profile"
-        fi
+backup_target() {
+    local target="$1"
+    local timestamp backup_path backup_parent
 
-        if [ "$DRY_RUN" = true ]; then
-            print_warning "[DRY RUN] Would add PATH to $SHELL_CONFIG"
-        elif ! grep -q "export PATH=\"\$HOME/.local/bin:\$PATH\"" "$SHELL_CONFIG" 2>/dev/null; then
-            echo '' >> "$SHELL_CONFIG"
-            echo '# Added by myScripts installer' >> "$SHELL_CONFIG"
-            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_CONFIG"
-            print_status "Added to $SHELL_CONFIG"
-            print_warning "Run 'source $SHELL_CONFIG' to use scripts immediately"
-        else
-            print_status "PATH already configured"
-        fi
-    fi
-fi
+    timestamp="$(date +%Y%m%d_%H%M%S)"
+    backup_path="$BACKUP_ROOT/$timestamp${target#$HOME}"
+    backup_parent="$(dirname "$backup_path")"
 
-# Setup config files
-if [ "$INSTALL_CONFIG" = true ]; then
-    echo -e "\n${YELLOW}Setting up configuration...${NC}"
-    if [ "$DRY_RUN" = true ]; then
-        if [ -f "$REPO_DIR/config/keys.json.example" ] && [ ! -f "$REPO_DIR/config/keys.json" ]; then
-            print_warning "[DRY RUN] Would create config/keys.json from example"
-        fi
-    elif [ -f "$REPO_DIR/config/keys.json.example" ] && [ ! -f "$REPO_DIR/config/keys.json" ]; then
-        cp "$REPO_DIR/config/keys.json.example" "$REPO_DIR/config/keys.json"
-        print_warning "Created config/keys.json - add your API keys!"
-    fi
-fi
+    mkdir -p "$backup_parent"
+    mv "$target" "$backup_path"
+    print_status "Backed up $target to $backup_path"
+}
 
-# Install Neovim configuration
-if [ "$INSTALL_NVIM" = true ]; then
-    echo -e "\n${YELLOW}Installing Neovim configuration...${NC}"
-    if [ "$DRY_RUN" = true ]; then
-        if [ -d "$REPO_DIR/nvim" ]; then
-            print_warning "[DRY RUN] Would symlink nvim config to $NVIM_CONFIG_DIR"
-            if [ -d "$NVIM_CONFIG_DIR" ] || [ -L "$NVIM_CONFIG_DIR" ]; then
-                if [ "$FORCE_INSTALL" = false ]; then
-                    print_warning "[DRY RUN] Would backup existing config"
-                else
-                    print_warning "[DRY RUN] Would overwrite existing config (--force)"
-                fi
-            fi
-        else
-            print_warning "[DRY RUN] No nvim/ directory found"
-        fi
-    elif [ -d "$REPO_DIR/nvim" ]; then
-        if [ -d "$NVIM_CONFIG_DIR" ] || [ -L "$NVIM_CONFIG_DIR" ]; then
-            if [ "$FORCE_INSTALL" = false ]; then
-                backup_dir="$NVIM_CONFIG_DIR.backup.$(date +%Y%m%d_%H%M%S)"
-                print_warning "Backing up existing config to: $(basename $backup_dir)"
-                mv "$NVIM_CONFIG_DIR" "$backup_dir"
-            else
-                print_warning "Removing existing config (--force)"
-                rm -rf "$NVIM_CONFIG_DIR"
+source_matches_target() {
+    local source="$1"
+    local target="$2"
+
+    [ -L "$target" ] || return 1
+    [ "$(readlink -f "$target")" = "$(readlink -f "$source")" ]
+}
+
+find_package_conflicts() {
+    local package="$1"
+    local source target rel
+
+    [ -d "$REPO_DIR/$package" ] || return 0
+
+    while IFS= read -r -d '' source; do
+        rel="${source#"$REPO_DIR/$package/"}"
+        target="$HOME/$rel"
+
+        if [ -e "$target" ] || [ -L "$target" ]; then
+            if ! source_matches_target "$source" "$target"; then
+                printf '%s\t%s\n' "$source" "$target"
             fi
         fi
+    done < <(find "$REPO_DIR/$package" -type f -print0)
+}
 
-        ln -s "$REPO_DIR/nvim" "$NVIM_CONFIG_DIR"
-        print_status "Neovim config symlinked"
-    else
-        print_warning "No nvim/ directory found"
-    fi
-fi
+resolve_package_conflicts() {
+    local package="$1"
+    local conflicts=()
+    local line source target choice
 
-# Setup cron jobs (optional)
-echo -e "\n${YELLOW}Cron jobs setup${NC}"
-if [ -f "$REPO_DIR/config/cron_jobs.txt" ]; then
-    print_warning "Cron jobs available in config/cron_jobs.txt"
-    echo "To install: crontab -e and add the jobs manually"
-    echo "Or run: cat $REPO_DIR/config/cron_jobs.txt >> ~/mycron && crontab ~/mycron && rm ~/mycron"
-else
-    print_warning "No cron jobs template found"
-fi
+    while IFS= read -r line; do
+        [ -n "$line" ] && conflicts+=("$line")
+    done < <(find_package_conflicts "$package")
 
-# Check dependencies
-echo -e "\n${YELLOW}Checking dependencies...${NC}"
-declare -a missing_deps=()
+    [ "${#conflicts[@]}" -eq 0 ] && return 0
 
-# Required
-for cmd in git; do
-    if ! command -v $cmd &> /dev/null; then
-        missing_deps+=("$cmd")
-    else
-        print_status "$cmd installed"
-    fi
-done
-
-# Optional - check based on what's being installed
-if [ "$INSTALL_NVIM" = true ]; then
-    if command -v nvim &> /dev/null; then
-        print_status "nvim installed"
-    else
-        print_warning "nvim not installed (required for Neovim config)"
-    fi
-fi
-
-if [ "$INSTALL_SCRIPTS" = true ]; then
-    for cmd in jq curl wmctrl; do
-        if command -v $cmd &> /dev/null; then
-            print_status "$cmd installed"
-        else
-            print_warning "$cmd not installed (optional for some scripts)"
-        fi
+    print_warning "Conflicts found for package '$package':"
+    for line in "${conflicts[@]}"; do
+        source="${line%%$'\t'*}"
+        target="${line#*$'\t'}"
+        echo "  target exists: $target"
+        echo "    repo file:   $source"
     done
-fi
 
-if [ ${#missing_deps[@]} -gt 0 ]; then
-    print_error "Missing required: ${missing_deps[*]}"
-    echo "Install with: sudo apt install ${missing_deps[*]}"
-fi
-
-if [ "$DRY_RUN" = true ]; then
-    echo -e "\n${GREEN}=== Dry Run Complete ===${NC}"
-    echo -e "${YELLOW}No changes were made. Remove --dry-run to perform installation.${NC}"
-    exit 0
-fi
-
-echo -e "\n${GREEN}=== Installation Complete! ===${NC}"
-
-# Dynamic next steps based on what was installed
-declare -a next_steps=()
-if [ "$INSTALL_SCRIPTS" = true ] && [ "$ADD_TO_PATH" = true ]; then
-    next_steps+=("Reload shell: source ~/.bashrc (or restart terminal)")
-fi
-if [ "$INSTALL_CONFIG" = true ]; then
-    next_steps+=("Edit config/keys.json with your API keys")
-    next_steps+=("Setup cron jobs if needed (see config/cron_jobs.txt)")
-fi
-if [ "$INSTALL_SCRIPTS" = true ]; then
-    next_steps+=("Available commands: backup, practice, closeall, simple-server")
-fi
-if [ "$INSTALL_NVIM" = true ]; then
-    next_steps+=("Launch nvim to install plugins automatically")
-fi
-
-if [ ${#next_steps[@]} -gt 0 ]; then
-    echo -e "\n${YELLOW}Next steps:${NC}"
-    for i in "${!next_steps[@]}"; do
-        echo "$((i+1)). ${next_steps[$i]}"
+    while true; do
+        echo
+        echo "Choose conflict handling for package '$package':"
+        echo "  [b] Back up existing targets and continue"
+        echo "  [s] Skip this package"
+        echo "  [a] Abort install"
+        read -r -p "Choice [b/s/a]: " choice
+        case "$choice" in
+            b|B)
+                for line in "${conflicts[@]}"; do
+                    target="${line#*$'\t'}"
+                    backup_target "$target"
+                done
+                return 0
+                ;;
+            s|S)
+                print_warning "Skipping package '$package'"
+                return 1
+                ;;
+            a|A)
+                print_error "Install aborted."
+                exit 1
+                ;;
+            *)
+                print_warning "Please choose b, s, or a."
+                ;;
+        esac
     done
-fi
+}
 
-echo -e "\n${YELLOW}Update later:${NC} cd $REPO_DIR && git pull && ./install.sh"
+stow_package() {
+    local package="$1"
+
+    if [ ! -d "$REPO_DIR/$package" ]; then
+        print_warning "Package '$package' not found; skipping"
+        return 0
+    fi
+
+    if resolve_package_conflicts "$package"; then
+        stow -d "$REPO_DIR" -t "$HOME" -R "$package"
+        print_status "Stowed package: $package"
+    fi
+}
+
+create_local_shell_example() {
+    if [ -f "$HOME/.bashrc.local.example" ] && [ ! -f "$HOME/.bashrc.local" ]; then
+        print_warning "For host-specific shell settings, copy ~/.bashrc.local.example to ~/.bashrc.local and edit it."
+    fi
+}
+
+print_secret_hygiene_reminder() {
+    echo
+    print_warning "Secret hygiene reminder"
+    echo "Before committing, review local/secret files:"
+    echo "  git status --short --ignored"
+    echo "  git ls-files | grep -Ei '(^|/)(\\.env|.*\\.local|settings\\.local\\.json|credentials|token.*\\.json)$' || true"
+    echo "If a secret is already tracked, remove it with git rm --cached <file> before committing."
+}
+
+main() {
+    echo -e "${GREEN}=== dotfiles installation ===${NC}"
+    echo "Repo: $REPO_DIR"
+    echo
+
+    ensure_stow
+
+    for package in "${STOW_PACKAGES[@]}"; do
+        stow_package "$package"
+    done
+
+    create_local_shell_example
+
+    echo
+    print_status "Install complete"
+    echo
+    echo "Installed Stow packages: ${STOW_PACKAGES[*]}"
+    echo "Not stowed by default: scripts, ai, assets, docs"
+    echo "Reload shell with: source ~/.bashrc"
+    echo "User commands will be available from: $REPO_DIR/scripts/bin"
+
+    print_secret_hygiene_reminder
+}
+
+main "$@"

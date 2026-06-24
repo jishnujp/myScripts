@@ -1,201 +1,155 @@
-# myScripts
+# dotfiles
 
-Quick Ubuntu server setup with useful scripts and Neovim configuration.
+Personal workflow and preference files for a new server/laptop: bash, Neovim, tmux, git, scripts, cron helpers, and a small Pi-only AI scaffold.
 
-## 🚀 Quick Installation
+The core dotfiles are installed with GNU Stow. Scripts and AI files are kept in the repo but are not stowed into `$HOME` by default.
+
+## Quick installation
 
 ```bash
-git clone https://github.com/jishnujp/myScripts.git ~/myScripts
-cd ~/myScripts
-chmod +x install.sh
+git clone https://github.com/jishnujp/dotfiles.git ~/dotfiles
+cd ~/dotfiles
 ./install.sh
 ```
 
-Or one-liner:
-```bash
-git clone https://github.com/jishnujp/myScripts.git ~/myScripts && cd ~/myScripts && chmod +x install.sh && ./install.sh
-```
-
-### Installation Options
-
-**Install everything (default):**
-```bash
-./install.sh
-```
-
-**Install only Neovim configuration:**
-```bash
-./install.sh --nvim-only
-```
-
-**See all options:**
-```bash
-./install.sh --help
-```
-
-## 🎯 Installation Modes
-
-The installer supports flexible installation options to suit your needs:
-
-| Option | Description |
-|--------|-------------|
-| `--nvim-only` | Install only Neovim configuration |
-| `--scripts-only` | Install only command-line scripts (bin/) |
-| `--no-nvim` | Install everything except Neovim config |
-| `--no-scripts` | Install everything except scripts |
-| `--minimal` | Create directories only, no scripts or nvim |
-| `--no-path` | Don't modify shell PATH configuration |
-| `--dry-run` | Preview what would be installed |
-| `--force` | Skip backup of existing nvim config |
-| `-h, --help` | Show help message |
-
-### Common Use Cases
-
-**Neovim configuration only:**
-```bash
-./install.sh --nvim-only
-```
-
-**Scripts without modifying PATH:**
-```bash
-./install.sh --scripts-only --no-path
-```
-
-**Everything except Neovim:**
-```bash
-./install.sh --no-nvim
-```
-
-**Preview before installing:**
-```bash
-./install.sh --dry-run
-```
-
-**Quick nvim update (skip existing backup):**
-```bash
-./install.sh --nvim-only --force
-```
-
-## 📦 What's Included
-
-### Command-Line Tools (added to PATH)
-
-- **`backup <folder>`** - Create timestamped tar.gz backups
-  ```bash
-  backup ~/Documents
-  ```
-
-- **`practice <project-name>`** - Create Python practice environment with venv
-  ```bash
-  practice django
-  ```
-
-- **`closeall`** - Close all open windows (requires wmctrl)
-  ```bash
-  closeall
-  ```
-
-- **`simple-server`** - Start a simple HTTP server on localhost:1500
-  ```bash
-  simple-server
-  ```
-
-### Automated Scripts (cron)
-
-- **`wallpaper.sh`** - Randomly change GNOME wallpaper
-- **`unsplashed.sh`** - Download wallpapers from Unsplash API
-- **`cleaner.sh`** - Clean old screenshots, downloads, and duplicates
-
-## ⚙️ Configuration
-
-### 1. API Keys Setup
+One-liner:
 
 ```bash
-cd ~/myScripts
-cp config/keys.json.example config/keys.json
-nano config/keys.json  # Add your Unsplash API key
+git clone https://github.com/jishnujp/dotfiles.git ~/dotfiles && cd ~/dotfiles && ./install.sh
 ```
 
-Get your Unsplash API key at: https://unsplash.com/developers
+## What `install.sh` does
 
-### 2. Cron Jobs Setup
+- Ensures GNU Stow is installed, or prompts to install it.
+- Stows only these packages by default:
+  - `bash` → `~/.bashrc`, `~/.bash_aliases`, `~/.profile`, `~/.inputrc`, `~/.bashrc.local.example`
+  - `nvim` → `~/.config/nvim`
+  - `tmux` → `~/.tmux.conf`
+  - `git` → `~/.gitconfig`, `~/.gitignore_global`
+- Does **not** stow `scripts/`, `ai/`, `assets/`, or `docs/`.
+- The managed `~/.bashrc` adds `~/dotfiles/scripts/bin` to `PATH` and sources `~/.bashrc.local` when present.
+- Prompts interactively when existing target files conflict:
+  - back up existing targets and continue
+  - skip that package
+  - abort
+- Prints a secret-hygiene reminder before you commit anything.
+
+## Repository structure
+
+```text
+dotfiles/
+├── install.sh
+├── README.md
+├── nvim/
+│   └── .config/nvim/          # Stow package for ~/.config/nvim
+├── tmux/
+│   └── .tmux.conf             # Stow package for ~/.tmux.conf
+├── git/
+│   ├── .gitconfig             # Stow package for ~/.gitconfig
+│   └── .gitignore_global      # Stow package for ~/.gitignore_global
+├── bash/
+│   ├── .bashrc                # managed bash baseline copied from this machine
+│   ├── .bash_aliases
+│   ├── .profile
+│   ├── .inputrc
+│   └── .bashrc.local.example  # template for ignored machine-local shell config
+├── scripts/
+│   ├── bin/                   # user-invoked commands, added to PATH by bash/.bashrc
+│   └── cron/                  # cron/scheduled-job scripts and templates
+├── ai/
+│   └── pi/                    # Pi-only scaffold, not installed by default
+├── assets/                    # reserved for future assets
+└── docs/                      # planning/decision/task docs
+```
+
+## Scripts
+
+After installation and reloading your shell, commands in `scripts/bin/` are available on `PATH`.
+
+Current commands include:
+
+- `backup <folder>` — create timestamped tar.gz backups in `~/backup/`
+- `practice <project-name>` — create a Python practice environment
+- `closeall` — close open windows, requires `wmctrl`
+- `simple-server` — start a tiny local HTTP response on port `1500`
+- `pi-workflow-init` — helper for Pi workflow setup
+
+Cron helpers live in `scripts/cron/` and are not installed automatically. Review/edit paths before adding them to your crontab.
+
+## Shell local config
+
+Machine-specific shell settings belong in:
 
 ```bash
-crontab -e
-# Add lines from config/cron_jobs.txt (update paths first!)
+~/.bashrc.local
 ```
 
-**Update the paths in cron_jobs.txt before adding them!**
+Create it from the example if needed:
 
-## 📁 Repository Structure
-
-```
-myScripts/
-├── install.sh              # Main installer
-├── bin/                    # Executable scripts (added to PATH)
-│   ├── backup
-│   ├── practice
-│   ├── closeall
-│   └── simple-server
-├── cron/                   # Automated scripts
-│   ├── wallpaper.sh
-│   ├── unsplashed.sh
-│   └── cleaner.sh
-├── config/                 # Configuration files
-│   ├── cron_jobs.txt
-│   └── keys.json.example
-└── nvim/                   # Neovim configuration
-```
-
-## 🔄 Updating
-
-**Update everything:**
 ```bash
-cd ~/myScripts
-git pull
-./install.sh
+cp ~/.bashrc.local.example ~/.bashrc.local
 ```
 
-**Update only Neovim config:**
+`~/.bashrc.local` is sourced by the managed `~/.bashrc` and should not be committed.
+
+## Manual Stow usage
+
 ```bash
-cd ~/myScripts
-git pull
-./install.sh --nvim-only
+cd ~/dotfiles
+stow bash
+stow nvim
+stow tmux
+stow git
+stow -D nvim   # unstow
+stow -R nvim   # restow
 ```
 
-**Update only scripts:**
-```bash
-cd ~/myScripts
-git pull
-./install.sh --scripts-only
-```
+Do not run `stow */`; that would try to stow non-dotfile directories such as `scripts/`, `ai/`, `assets/`, and `docs/`.
 
-## 🛠️ Dependencies
+## Dependencies
 
-**Required:**
+Required:
+
 - git
 - bash
+- GNU Stow
 
-**Optional:**
-- neovim (for nvim config)
-- jq, curl (for unsplashed.sh)
-- wmctrl (for closeall)
-- gsettings/GNOME (for wallpaper.sh)
+Optional, depending on what you use:
 
-Install on Ubuntu:
+- neovim
+- jq, curl
+- wmctrl
+- gsettings/GNOME tools
+- xclip, for tmux clipboard behavior
+
+Ubuntu example:
+
 ```bash
 sudo apt update
-sudo apt install git neovim jq curl wmctrl
+sudo apt install git stow neovim jq curl wmctrl xclip
 ```
 
-## 📝 Notes
+## Secret hygiene
 
-- Backups are stored in `~/backup/`
-- Wallpapers are stored in `~/Pictures/Background/`
-- Practice projects go to `~/Desktop/practice/`
-- Scripts use `$HOME` for portability across servers
-- Nvim config is symlinked (changes sync with repo)
+Do not commit credentials, OAuth tokens, PATs, local shell settings, `.env` files, or machine-local agent settings.
 
-## 🤝 Contributing
+Before committing, run:
 
-Feel free to fork and customize for your own use!
+```bash
+git status --short --ignored
+git ls-files | grep -Ei '(^|/)(\.env|.*\.local|settings\.local\.json|credentials|token.*\.json)$' || true
+```
+
+Important: adding a pattern to `.gitignore` does **not** untrack a file that is already tracked. If a secret-like file is tracked, remove it from git without deleting your local copy:
+
+```bash
+git rm --cached <file>
+```
+
+## Updating
+
+```bash
+cd ~/dotfiles
+git pull
+./install.sh
+```
