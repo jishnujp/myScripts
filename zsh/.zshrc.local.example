@@ -1,0 +1,13 @@
+# Machine-specific zsh customizations for this host.
+#
+# To use:
+#   cp ~/.zshrc.local.example ~/.zshrc.local
+#   edit ~/.zshrc.local
+#
+# This file is an example and is safe to commit. The real ~/.zshrc.local is ignored.
+
+# Example: host-specific environment variables
+# export EDITOR=nvim
+
+# Example: host-specific aliases
+# alias work='cd ~/work'

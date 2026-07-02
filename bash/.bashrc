@@ -44,9 +44,10 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Load environment and aliases
+# Load environment and shared (shell-agnostic) aliases
 [ -f ~/.bash_env ] && . ~/.bash_env
-[ -f ~/.bash_aliases ] && . ~/.bash_aliases
+[ -f ~/.shell_common.sh ] && . ~/.shell_common.sh
+[ -f ~/.bash_aliases ] && . ~/.bash_aliases   # optional host-local bash aliases
 export PATH="$HOME/.local/bin:$PATH"
 
 # Dotfiles scripts

@@ -9,7 +9,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STOW_PACKAGES=(nvim tmux git bash)
+STOW_PACKAGES=(nvim tmux bash zsh shell)
 BACKUP_ROOT="$HOME/.dotfiles-backup"
 
 print_status() { echo -e "${GREEN}[✓]${NC} $1"; }
@@ -190,7 +190,8 @@ main() {
     echo
     echo "Installed Stow packages: ${STOW_PACKAGES[*]}"
     echo "Not stowed by default: scripts, ai, assets, docs"
-    echo "Reload shell with: source ~/.bashrc"
+    echo "Git config is intentionally not managed here (identity/auth is per-machine)."
+    echo "Reload shell with: source ~/.bashrc   (or ~/.zshrc on macOS)"
     echo "User commands will be available from: $REPO_DIR/scripts/bin"
 
     print_secret_hygiene_reminder

@@ -1,8 +1,8 @@
 # dotfiles
 
-Personal workflow and preference files for a new server/laptop: bash, Neovim, tmux, git, scripts, cron helpers, and a small Pi-only AI scaffold.
+Personal workflow and preference files for a new server/laptop: bash + zsh, Neovim, tmux, scripts, cron helpers, and a small Pi-only AI scaffold. Works on Linux (bash) and macOS (zsh); both shells share one aliases file.
 
-The core dotfiles are installed with GNU Stow. Scripts and AI files are kept in the repo but are not stowed into `$HOME` by default.
+The core dotfiles are installed with GNU Stow. Scripts and AI files are kept in the repo but are not stowed into `$HOME` by default. Git config is intentionally **not** managed here — identity and auth (credential helpers, signing keys) vary per machine, so set those up per host.
 
 ## Quick installation
 
@@ -22,12 +22,14 @@ git clone https://github.com/jishnujp/dotfiles.git ~/dotfiles && cd ~/dotfiles &
 
 - Ensures GNU Stow is installed, or prompts to install it.
 - Stows only these packages by default:
-  - `bash` → `~/.bashrc`, `~/.bash_aliases`, `~/.profile`, `~/.inputrc`, `~/.bashrc.local.example`
+  - `bash` → `~/.bashrc`, `~/.profile`, `~/.inputrc`, `~/.bashrc.local.example`
+  - `zsh` → `~/.zshrc`, `~/.zshrc.local.example` (macOS default shell)
+  - `shell` → `~/.shell_common.sh` (shared aliases/env sourced by bash **and** zsh)
   - `nvim` → `~/.config/nvim`
   - `tmux` → `~/.tmux.conf`
-  - `git` → `~/.gitconfig`, `~/.gitignore_global`
 - Does **not** stow `scripts/`, `ai/`, `assets/`, or `docs/`.
-- The managed `~/.bashrc` adds `~/dotfiles/scripts/bin` to `PATH` and sources `~/.bashrc.local` when present.
+- Does **not** manage git config; set `~/.gitconfig` up per machine.
+- The managed `~/.bashrc` / `~/.zshrc` add `~/dotfiles/scripts/bin` to `PATH` and source `~/.bashrc.local` / `~/.zshrc.local` when present.
 - Prompts interactively when existing target files conflict:
   - back up existing targets and continue
   - skip that package
@@ -43,16 +45,17 @@ dotfiles/
 ├── nvim/
 │   └── .config/nvim/          # Stow package for ~/.config/nvim
 ├── tmux/
-│   └── .tmux.conf             # Stow package for ~/.tmux.conf
-├── git/
-│   ├── .gitconfig             # Stow package for ~/.gitconfig
-│   └── .gitignore_global      # Stow package for ~/.gitignore_global
+│   └── .tmux.conf             # Stow package for ~/.tmux.conf (per-OS clipboard)
+├── shell/
+│   └── .shell_common.sh       # shared aliases/env, sourced by bash and zsh
 ├── bash/
-│   ├── .bashrc                # managed bash baseline copied from this machine
-│   ├── .bash_aliases
+│   ├── .bashrc                # managed bash baseline (Linux default shell)
 │   ├── .profile
 │   ├── .inputrc
 │   └── .bashrc.local.example  # template for ignored machine-local shell config
+├── zsh/
+│   ├── .zshrc                 # managed zsh baseline (macOS default shell)
+│   └── .zshrc.local.example   # template for ignored machine-local shell config
 ├── scripts/
 │   ├── bin/                   # user-invoked commands, added to PATH by bash/.bashrc
 │   └── cron/                  # cron/scheduled-job scripts and templates
@@ -70,36 +73,31 @@ Current commands include:
 
 - `backup <folder>` — create timestamped tar.gz backups in `~/backup/`
 - `practice <project-name>` — create a Python practice environment
-- `closeall` — close open windows, requires `wmctrl`
+- `closeall` — close open windows, requires `wmctrl` (Linux/X11)
 - `simple-server` — start a tiny local HTTP response on port `1500`
 - `pi-workflow-init` — helper for Pi workflow setup
 
-Cron helpers live in `scripts/cron/` and are not installed automatically. Review/edit paths before adding them to your crontab.
+The scripts in `scripts/bin/` and `scripts/cron/` are Linux-oriented (they assume `wmctrl`, GNOME `gsettings`, `sha1sum`, and `/home/<user>` paths) and have not been made macOS-portable. Cron helpers live in `scripts/cron/`, are not installed automatically — review/edit paths before adding them to your crontab.
 
 ## Shell local config
 
-Machine-specific shell settings belong in:
+Machine-specific shell settings belong in a host-local file that is sourced by the managed shell config and must not be committed:
 
 ```bash
-~/.bashrc.local
+cp ~/.bashrc.local.example ~/.bashrc.local   # bash / Linux
+cp ~/.zshrc.local.example  ~/.zshrc.local    # zsh / macOS
 ```
 
-Create it from the example if needed:
-
-```bash
-cp ~/.bashrc.local.example ~/.bashrc.local
-```
-
-`~/.bashrc.local` is sourced by the managed `~/.bashrc` and should not be committed.
+Aliases and env that should apply on **both** shells go in `shell/.shell_common.sh` (stowed to `~/.shell_common.sh`), which `~/.bashrc` and `~/.zshrc` both source.
 
 ## Manual Stow usage
 
 ```bash
 cd ~/dotfiles
-stow bash
+stow bash       # or: stow zsh   (macOS)
+stow shell
 stow nvim
 stow tmux
-stow git
 stow -D nvim   # unstow
 stow -R nvim   # restow
 ```
@@ -111,22 +109,28 @@ Do not run `stow */`; that would try to stow non-dotfile directories such as `sc
 Required:
 
 - git
-- bash
+- bash (Linux) or zsh (macOS)
 - GNU Stow
 
 Optional, depending on what you use:
 
 - neovim
 - jq, curl
-- wmctrl
-- gsettings/GNOME tools
-- xclip, for tmux clipboard behavior
+- wmctrl (Linux/X11, for `closeall`)
+- gsettings/GNOME tools (Linux, for cron wallpaper helpers)
+- a clipboard tool for tmux: `xclip` (X11), `wl-clipboard` (Wayland), or `pbcopy` (built into macOS)
 
 Ubuntu example:
 
 ```bash
 sudo apt update
 sudo apt install git stow neovim jq curl wmctrl xclip
+```
+
+macOS example:
+
+```bash
+brew install stow neovim jq   # zsh is the default shell; pbcopy is built in
 ```
 
 ## Secret hygiene
